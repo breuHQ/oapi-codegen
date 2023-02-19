@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -33,6 +34,9 @@ type Schema struct {
 	// `type Foo = bool`. If this is not set, we will define this type via
 	// type definition `type Foo bool`
 	DefineViaAlias bool
+
+	// If this is set, the schma will set up the lookup table for the entity with respective fields.
+	BreuEntity string
 
 	// The original OpenAPIv3 Schema.
 	OAPISchema *openapi3.Schema
@@ -217,6 +221,7 @@ func PropertiesEqual(a, b Property) bool {
 }
 
 func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
+	entity := ""
 	// Add a fallback value in case the sref is nil.
 	// i.e. the parent schema defines a type:array, but the array has
 	// no items defined. Therefore, we have at least valid Go-Code.
@@ -225,6 +230,11 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
 	}
 
 	schema := sref.Value
+	if len(path) == 1 {
+		if val, ok := schema.ExtensionProps.Extensions[extBreuEntity]; ok {
+			entity = string(val.(json.RawMessage))
+		}
+	}
 
 	// If Ref is set on the SchemaRef, it means that this type is actually a reference to
 	// another type. We're not de-referencing, so simply use the referenced type.
@@ -245,6 +255,7 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
 	outSchema := Schema{
 		Description: schema.Description,
 		OAPISchema:  schema,
+		BreuEntity:  entity,
 	}
 
 	// AllOf is interesting, and useful. It's the union of a number of other

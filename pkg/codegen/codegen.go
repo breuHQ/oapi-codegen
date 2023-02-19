@@ -497,6 +497,11 @@ func GenerateTypesForSchemas(t *template.Template, schemas map[string]*openapi3.
 
 		types = append(types, goSchema.GetAdditionalTypeDefs()...)
 	}
+
+	for _, ty := range types {
+		fmt.Println(ty.TypeName, ":", ty.Schema.BreuEntity)
+	}
+
 	return types, nil
 }
 
