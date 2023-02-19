@@ -608,9 +608,10 @@ type FieldDescriptor struct {
 	IsRef    bool   // Is this schema a reference to predefined object?
 }
 
-// GenFieldsFromProperties produce corresponding field names with JSON annotations,
+// GenStuctFieldsFromSchema produce corresponding field names with JSON annotations,
 // given a list of schema descriptors
-func GenFieldsFromProperties(props []Property) []string {
+func GenStuctFieldsFromSchema(schema Schema) []string {
+	props := schema.Properties
 	var fields []string
 	for i, p := range props {
 		field := ""
@@ -672,6 +673,12 @@ func GenFieldsFromProperties(props []Property) []string {
 				}
 			}
 		}
+
+		// Support x-breu-entity
+		if schema.BreuEntity != "" {
+			fieldTags["cql"] = p.JsonFieldName
+		}
+
 		// Convert the fieldTags map into Go field annotations.
 		keys := SortedStringKeys(fieldTags)
 		tags := make([]string, len(keys))
@@ -696,7 +703,7 @@ func GenStructFromSchema(schema Schema) string {
 	// Start out with struct {
 	objectParts := []string{"struct {"}
 	// Append all the field definitions
-	objectParts = append(objectParts, GenFieldsFromProperties(schema.Properties)...)
+	objectParts = append(objectParts, GenStuctFieldsFromSchema(schema)...)
 	// Close the struct
 	if schema.HasAdditionalProperties {
 		objectParts = append(objectParts,
