@@ -95,6 +95,7 @@ type OutputOptions struct {
 	IncludeOperationIDs []string          `yaml:"include-operation-ids,omitempty"` // Only include operations that have one of these operation-ids. Ignored when empty.
 	ExcludeOperationIDs []string          `yaml:"exclude-operation-ids,omitempty"` // Exclude operations that have one of these operation-ids. Ignored when empty.
 	UserTemplates       map[string]string `yaml:"user-templates,omitempty"`        // Override built-in templates from user-provided files
+	UserTemplatesDir    string            `yaml:"user-templates-dir,omitempty"`    // Override built-in tempolates from user-provided directory. Ignored when empty.
 
 	ExcludeSchemas      []string `yaml:"exclude-schemas,omitempty"`      // Exclude from generation schemas with given names. Ignored when empty.
 	ResponseTypeSuffix  string   `yaml:"response-type-suffix,omitempty"` // The suffix used for responses types
