@@ -194,18 +194,40 @@ func mediaTypeToCamelCase(s string) string {
 // order, since Golang scrambles dictionary keys
 func SortedSchemaKeys(dict map[string]*openapi3.SchemaRef) []string {
 	keys := make([]string, len(dict))
+	orders := make(map[string]int64, len(dict))
 	i := 0
-	for key := range dict {
-		keys[i] = key
+
+	for key, v := range dict {
+		keys[i], orders[key] = key, int64(len(dict))
 		i++
+
+		if v == nil || v.Value == nil {
+			continue
+		}
+
+		ext := v.Value.Extensions["x-order"]
+		if ext == nil {
+			continue
+		}
+
+		// YAML parsing picks up the x-order as a float64
+		if order, ok := ext.(float64); ok {
+			orders[key] = int64(order)
+		}
 	}
-	sort.Strings(keys)
+
+	sort.Slice(keys, func(i, j int) bool {
+		if i, j := orders[keys[i]], orders[keys[j]]; i != j {
+			return i < j
+		}
+		return keys[i] < keys[j]
+	})
 	return keys
 }
 
 // SortedPathsKeys is the same as above, except it sorts the keys for a Paths
 // dictionary.
-func SortedPathsKeys(dict openapi3.Paths) []string {
+func SortedPathsKeys(dict map[string]*openapi3.PathItem) []string {
 	keys := make([]string, len(dict))
 	i := 0
 	for key := range dict {
@@ -229,7 +251,7 @@ func SortedOperationsKeys(dict map[string]*openapi3.Operation) []string {
 }
 
 // SortedResponsesKeys returns Responses dictionary keys in sorted order
-func SortedResponsesKeys(dict openapi3.Responses) []string {
+func SortedResponsesKeys(dict map[string]*openapi3.ResponseRef) []string {
 	keys := make([]string, len(dict))
 	i := 0
 	for key := range dict {
@@ -962,4 +984,13 @@ func isAdditionalPropertiesExplicitFalse(s *openapi3.Schema) bool {
 	}
 
 	return *s.AdditionalProperties.Has == false //nolint:gosimple
+}
+
+func sliceContains[E comparable](s []E, v E) bool {
+	for _, ss := range s {
+		if ss == v {
+			return true
+		}
+	}
+	return false
 }

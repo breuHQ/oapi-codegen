@@ -21,9 +21,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/deepmap/oapi-codegen/v2/pkg/util"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/deepmap/oapi-codegen/v2/pkg/util"
 )
 
 const (
@@ -123,8 +124,8 @@ func genResponseUnmarshal(op *OperationDefinition) string {
 	responses := op.Spec.Responses
 	for _, typeDefinition := range typeDefinitions {
 
-		responseRef, ok := responses[typeDefinition.ResponseName]
-		if !ok {
+		responseRef := responses.Value(typeDefinition.ResponseName)
+		if responseRef == nil {
 			continue
 		}
 

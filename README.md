@@ -272,7 +272,7 @@ func SetupHandler() {
     var myApi PetStoreImpl
 
     r := gin.Default()
-	  r.Use(middleware.OapiRequestValidator(swagger))
+    r.Use(middleware.OapiRequestValidator(swagger))
     r = api.RegisterHandlers(r, petStore)
 }
 ```
@@ -343,7 +343,7 @@ func SetupHandler() {
     var myApi PetStoreImpl
 
     i := iris.Default()
-	  i.Use(middleware.OapiRequestValidator(swagger))
+    i.Use(middleware.OapiRequestValidator(swagger))
     api.RegisterHandlers(r, &myApi)
 }
 ```
@@ -383,7 +383,7 @@ The generated strict wrapper can then be used as an implementation for `ServerIn
 ```go
 func SetupHandler() {
     var myApi PetStoreImpl
-	myStrictApiHandler := api.NewStrictHandler(myApi, nil)
+    myStrictApiHandler := api.NewStrictHandler(myApi, nil)
     e := echo.New()
     petstore.RegisterHandlers(e, &myStrictApiHandler)
 }
@@ -619,7 +619,7 @@ which help you to use the various OpenAPI 3 Authentication mechanism.
         }
 
         // Example providing your own provider using an anonymous function wrapping in the
-        // InterceptoFn adapter. The behaviour between the InterceptorFn and the Interceptor interface
+        // InterceptorFn adapter. The behaviour between the InterceptorFn and the Interceptor interface
         // are the same as http.HandlerFunc and http.Handler.
         customProvider := func(req *http.Request, ctx context.Context) error {
             // Just log the request header, nothing else.
@@ -779,6 +779,35 @@ which help you to use the various OpenAPI 3 Authentication mechanism.
   type ObjectCategory int
   ```
 
+- `x-order`: specifies the order of the fields in the structure. It allows you to specify the order
+  of the fields in the generated structure and will override any default value. This extended
+  property is not supported in all parts of OpenAPI, so check the specification to see where it is
+  allowed.
+
+    ```yaml
+    DateInterval:
+      type: object
+      required:
+        - name
+      properties:
+        end:
+          type: string
+          format: date
+          x-order: 2
+        start:
+          type: string
+          format: date
+          x-order: 1
+    ```
+  In the example above, struct will be declared as:
+
+    ```go
+    type DateInterval struct {
+      Start *openapi_types.Date `json:"start,omitempty"`
+      End   *openapi_types.Date `json:"end,omitempty"`
+    }
+    ```
+  
 ## Using `oapi-codegen`
 
 The default options for `oapi-codegen` will generate everything; client, server,
@@ -813,13 +842,13 @@ So, for example, if you would like to produce only the server code, you could
 run `oapi-codegen -generate types,server`. You could generate `types` and
 `server` into separate files, but both are required for the server code.
 
-`oapi-codegen` can filter paths base on their tags in the openapi definition.
-Use either `-include-tags` or `-exclude-tags` followed by a comma-separated list
-of tags. For instance, to generate a server that serves all paths except those
-tagged with `auth` or `admin`, use the argument, `-exclude-tags="auth,admin"`.
+`oapi-codegen` can filter paths base on their tags or operationId in the openapi definition.
+Use either `-include-tags`, `include-operation-ids` or `-exclude-tags`, `-exclude-operation-ids` 
+followed by a comma-separated list of tags or operation ids. For instance, to generate a server
+that serves all paths except those tagged with `auth` or `admin`, use the argument, `-exclude-tags="auth,admin"`.
 To generate a server that only handles `admin` paths, use the argument
-`-include-tags="admin"`. When neither of these arguments is present, all paths
-are generated.
+`-include-tags="admin"` or use `-include-operation-ids="getPets"` to include this specific operation.
+When neither of these arguments is present, all paths are generated.
 
 `oapi-codegen` can filter schemas based on the option `--exclude-schemas`, which is
 a comma separated list of schema names. For instance, `--exclude-schemas=Pet,NewPet`
@@ -933,7 +962,7 @@ output-options:
     # using a local file
     client-with-responses.tmpl: /home/username/workspace/templatesProject/my-client-with-responses.tmpl
 
-    # The following are referencing a versuion of the default
+    # The following are referencing a version of the default
     # client-with-responses.tmpl file, but loaded in through
     # github's raw.githubusercontent.com. The general form
     # to use raw.githubusercontent.com is as follows

@@ -33,6 +33,8 @@ type Schema struct {
 	// If this is set, the schema will declare a type via alias, eg,
 	// `type Foo = bool`. If this is not set, we will define this type via
 	// type definition `type Foo bool`
+	//
+	// Can be overriden by the OutputOptions#DisableTypeAliasesForType field
 	DefineViaAlias bool
 
 	// Breu related schema extensions
@@ -47,6 +49,13 @@ func (s Schema) IsRef() bool {
 	return s.RefType != ""
 }
 
+func (s Schema) IsExternalRef() bool {
+	if !s.IsRef() {
+		return false
+	}
+	return strings.Contains(s.RefType, ".")
+}
+
 func (s Schema) TypeDecl() string {
 	if s.IsRef() {
 		return s.RefType
@@ -57,7 +66,7 @@ func (s Schema) TypeDecl() string {
 // AddProperty adds a new property to the current Schema, and returns an error
 // if it collides. Two identical fields will not collide, but two properties by
 // the same name, but different definition, will collide. It's safe to merge the
-// fields of two schemas with overalapping properties if those properties are
+// fields of two schemas with overlapping properties if those properties are
 // identical.
 func (s *Schema) AddProperty(p Property) error {
 	// Scan all existing properties for a conflict
@@ -98,6 +107,9 @@ func (p Property) GoFieldName() string {
 
 func (p Property) GoTypeDef() string {
 	typeDef := p.Schema.TypeDecl()
+	if globalState.options.OutputOptions.NullableType && p.Nullable {
+		return "nullable.Nullable[" + typeDef + "]"
+	}
 	if !p.Schema.SkipOptionalPointer &&
 		(!p.Required || p.Nullable ||
 			(p.ReadOnly && (!p.Required || !globalState.options.Compatibility.DisableRequiredReadOnlyAsPointer)) ||
@@ -569,6 +581,10 @@ func oapiSchemaToGoType(schema *openapi3.Schema, path []string, outSchema *Schem
 		outSchema.AdditionalTypes = arrayType.AdditionalTypes
 		outSchema.Properties = arrayType.Properties
 		outSchema.DefineViaAlias = true
+		if sliceContains(globalState.options.OutputOptions.DisableTypeAliasesForType, "array") {
+			outSchema.DefineViaAlias = false
+		}
+
 	case "integer":
 		// We default to int if format doesn't ask for something else.
 		if f == "int64" {
@@ -701,9 +717,14 @@ func GenFieldsFromProperties(props []Property, entity, entitype string) []string
 
 		field += fmt.Sprintf("    %s %s", goFieldName, p.GoTypeDef())
 
-		omitEmpty := !p.Nullable &&
-			(!p.Required || p.ReadOnly || p.WriteOnly) &&
+		shouldOmitEmpty := (!p.Required || p.ReadOnly || p.WriteOnly) &&
 			(!p.Required || !p.ReadOnly || !globalState.options.Compatibility.DisableRequiredReadOnlyAsPointer)
+
+		omitEmpty := !p.Nullable && shouldOmitEmpty
+
+		if p.Nullable && globalState.options.OutputOptions.NullableType {
+			omitEmpty = shouldOmitEmpty
+		}
 
 		// Support x-omitempty
 		if extOmitEmptyValue, ok := p.Extensions[extPropOmitEmpty]; ok {
