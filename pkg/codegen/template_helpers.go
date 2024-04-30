@@ -331,6 +331,25 @@ func substring(start, end int, s string) string {
 	return s[start:end]
 }
 
+func toStringSlice(list interface{}) []string {
+	if list == nil {
+		return nil
+	}
+
+	switch v := list.(type) {
+	case []string:
+		return v
+	case []interface{}:
+		res := make([]string, len(v))
+		for i, vv := range v {
+			res[i] = fmt.Sprint(vv)
+		}
+		return res
+	default:
+		return []string{fmt.Sprint(list)}
+	}
+}
+
 // TemplateFunctions is passed to the template engine, and we can call each
 // function here by keyName from the template code.
 var TemplateFunctions = template.FuncMap{
@@ -361,4 +380,5 @@ var TemplateFunctions = template.FuncMap{
 	"split":                      split,
 	"splitn":                     splitn,
 	"substring":                  substring,
+	"toStringSlice":              toStringSlice,
 }

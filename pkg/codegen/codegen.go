@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -32,6 +33,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/getkin/kin-openapi/openapi3"
 	"golang.org/x/tools/imports"
 
@@ -128,6 +130,7 @@ func Generate(spec *openapi3.T, opts Configuration) (string, error) {
 
 	// This creates the golang templates text package
 	TemplateFunctions["opts"] = func() Configuration { return globalState.options }
+	maps.Copy(TemplateFunctions, sprig.FuncMap())
 	t := template.New("oapi-codegen").Funcs(TemplateFunctions)
 	// This parses all of our own template files into the template object
 	// above
